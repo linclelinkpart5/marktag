@@ -1,6 +1,6 @@
 
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use clap::Clap;
 
@@ -17,11 +17,24 @@ struct Opts {
 
 struct Entry {
     path: PathBuf,
-    track_num: u32,
+    track_num: usize,
     block: HashMap<String, Vec<String>>,
 }
 
 fn collect_entries(source_dir: &Path) -> Vec<Entry> {
+    let flac_files =
+        source_dir
+        .read_dir()
+        .unwrap()
+        .map(Result::unwrap)
+        .collect::<Vec<_>>()
+    ;
+
+    let mut expected_track_nums = (0..flac_files.len()).collect::<HashSet<_>>();
+
+    for flac_file in flac_files {
+    }
+
     unimplemented!()
 }
 
