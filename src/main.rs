@@ -46,7 +46,7 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
         .collect::<Vec<_>>()
     ;
 
-    let mut expected_track_nums = (0..flac_files.len()).collect::<HashSet<_>>();
+    let mut expected_track_nums = (1..=flac_files.len()).collect::<HashSet<_>>();
     let mut entries = Vec::with_capacity(flac_files.len());
 
     for flac_file in flac_files {
@@ -56,16 +56,26 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
         let track_num_str = expect_one(flac_tag.get_vorbis("tracknumber").unwrap());
         let track_num = track_num_str.parse::<usize>().unwrap();
 
+        println!("Track #{}", track_num);
+
         assert!(expected_track_nums.remove(&track_num), "unexpected track number");
 
-        let block = flac_tag.vorbis_comments().unwrap().clone();
+        let block = flac_tag.vorbis_comments().cloned().unwrap();
 
         let entry = Entry {
             path: flac_file,
             track_num,
             block,
         };
+
+        entries.push(entry);
     }
+
+    // Ensure that all expected track numbers were covered.
+    assert!(expected_track_nums.is_empty());
+
+    // Sort the entries by track number.
+    entries.sort_by_key(|e| e.track_num);
 
     entries
 }
