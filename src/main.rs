@@ -135,6 +135,20 @@ fn load_track_blocks(path: &Path) -> Vec<Block> {
     serde_json::from_str(&contents).unwrap()
 }
 
+fn process_entries(
+    entries: Vec<Entry>,
+    album_block: Block,
+    track_blocks: Vec<Block>,
+    output_dir: &Path,
+)
+{
+    // Ensure equal numbers of entries and track blocks.
+    assert_eq!(entries.len(), track_blocks.len());
+
+    let total_tracks = entries.len();
+    let num_digits = format!("{}", total_tracks).len();
+}
+
 fn main() {
     let opts = Opts::parse();
     println!("{:?}", opts);
