@@ -126,7 +126,11 @@ fn load_album_block(path: &Path) -> Block {
 }
 
 fn load_track_blocks(path: &Path) -> Vec<Block> {
-    Vec::new()
+    let mut file = File::open(path).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+
+    serde_json::from_str(&contents).unwrap()
 }
 
 fn main() {
