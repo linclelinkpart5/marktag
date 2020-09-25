@@ -24,6 +24,8 @@ struct Entry {
     block: VorbisComment,
 }
 
+type Block = HashMap<String, Vec<String>>;
+
 fn expect_one<T>(it: impl Iterator<Item = T>) -> T {
     let mut it = it.into_iter();
     let first = it.next();
@@ -78,6 +80,14 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
     entries.sort_by_key(|e| e.track_num);
 
     entries
+}
+
+fn load_album_block(path: &Path) -> Block {
+    Block::new()
+}
+
+fn load_track_blocks(path: &Path) -> Vec<Block> {
+    Vec::new()
 }
 
 fn main() {
