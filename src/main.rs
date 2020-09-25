@@ -27,9 +27,11 @@ struct Entry {
     block: VorbisComment,
 }
 
+type Block = HashMap<String, Vec<String>>;
+
 #[derive(Deserialize)]
 #[serde(from = "BlockRepr")]
-struct Block(HashMap<String, Vec<String>>);
+struct BlockWrapper(Block);
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -51,9 +53,9 @@ impl BlockReprVal {
 #[serde(transparent)]
 struct BlockRepr(HashMap<String, BlockReprVal>);
 
-impl From<BlockRepr> for Block {
-    fn from(br: BlockRepr) -> Block {
-        Block(
+impl From<BlockRepr> for BlockWrapper {
+    fn from(br: BlockRepr) -> BlockWrapper {
+        BlockWrapper(
             br.0.into_iter()
             .map(|(k, v)| (k, v.into_many()))
             .collect()
@@ -122,7 +124,7 @@ fn load_album_block(path: &Path) -> Block {
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
-    serde_json::from_str(&contents).unwrap()
+    serde_json::from_str::<BlockWrapper>(&contents).unwrap().0
 }
 
 fn load_track_blocks(path: &Path) -> Vec<Block> {
@@ -137,5 +139,8 @@ fn main() {
     let opts = Opts::parse();
     println!("{:?}", opts);
 
-    collect_entries(&opts.source_dir);
+    let entries = collect_entries(&opts.source_dir);
+
+    let album_block = load_album_block(&opts.album_block_file);
+    let track_blocks = load_track_blocks(&opts.track_blocks_file);
 }
