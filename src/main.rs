@@ -1,11 +1,14 @@
 
 use std::ffi::OsStr;
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::collections::{HashMap, HashSet};
 
 use clap::Clap;
 use metaflac::Tag;
 use metaflac::block::VorbisComment;
+use serde::Deserialize;
 
 #[derive(Debug, Clap)]
 struct Opts {
@@ -24,7 +27,39 @@ struct Entry {
     block: VorbisComment,
 }
 
-type Block = HashMap<String, Vec<String>>;
+#[derive(Deserialize)]
+#[serde(from = "BlockRepr")]
+struct Block(HashMap<String, Vec<String>>);
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum BlockReprVal {
+    One(String),
+    Many(Vec<String>),
+}
+
+impl BlockReprVal {
+    fn into_many(self) -> Vec<String> {
+        match self {
+            Self::One(s) => vec![s],
+            Self::Many(v) => v,
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(transparent)]
+struct BlockRepr(HashMap<String, BlockReprVal>);
+
+impl From<BlockRepr> for Block {
+    fn from(br: BlockRepr) -> Block {
+        Block(
+            br.0.into_iter()
+            .map(|(k, v)| (k, v.into_many()))
+            .collect()
+        )
+    }
+}
 
 fn expect_one<T>(it: impl Iterator<Item = T>) -> T {
     let mut it = it.into_iter();
@@ -83,7 +118,11 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
 }
 
 fn load_album_block(path: &Path) -> Block {
-    Block::new()
+    let mut file = File::open(path).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+
+    serde_json::from_str(&contents).unwrap()
 }
 
 fn load_track_blocks(path: &Path) -> Vec<Block> {
