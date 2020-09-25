@@ -147,6 +147,11 @@ fn process_entries(
 
     let total_tracks = entries.len();
     let num_digits = format!("{}", total_tracks).len();
+
+    {
+        let temp_dir = tempfile::tempdir().expect("unable to create temp dir");
+        let temp_dir_path = temp_dir.path();
+    }
 }
 
 fn main() {
