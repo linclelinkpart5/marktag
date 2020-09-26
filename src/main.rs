@@ -1,13 +1,13 @@
 
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::collections::{HashMap, HashSet};
 
 use clap::Clap;
 use metaflac::Tag;
-use metaflac::block::VorbisComment;
+use metaflac::block::{BlockType, VorbisComment};
 use serde::Deserialize;
 
 #[derive(Debug, Clap)]
@@ -151,6 +151,36 @@ fn process_entries(
     {
         let temp_dir = tempfile::tempdir().expect("unable to create temp dir");
         let temp_dir_path = temp_dir.path();
+
+        for (entry, track_block) in entries.into_iter().zip(track_blocks) {
+            let mut flac_tag = Tag::read_from_path(&entry.path).unwrap();
+
+            // Remove all tags and pictures.
+            flac_tag.remove_blocks(BlockType::VorbisComment);
+            flac_tag.remove_blocks(BlockType::Picture);
+
+            let comments = &mut flac_tag.vorbis_comments_mut().comments;
+
+            // Add in album block fields.
+            for (k, v) in &album_block {
+                comments.insert(k.clone(), v.clone());
+            }
+
+            // Add in track block fields.
+            for (k, v) in track_block {
+                comments.insert(k, v);
+            }
+
+            // Add track index/count fields.
+            comments.insert(
+                String::from("tracknumber"),
+                vec![entry.track_num.to_string()],
+            );
+            comments.insert(
+                String::from("totaltracks"),
+                vec![total_tracks.to_string()],
+            );
+        }
     }
 }
 
