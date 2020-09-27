@@ -214,6 +214,8 @@ fn process_entries(
 
             let interim_file_name = format!("{}. {} - {}.{}", tno, ars, ttl, ext);
             let interim_path = temp_dir_path.join(interim_file_name);
+
+            std::fs::rename(&entry.path, &interim_path).unwrap();
         }
     }
 }
