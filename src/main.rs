@@ -4,6 +4,7 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use clap::Clap;
 use metaflac::Tag;
@@ -222,6 +223,20 @@ fn process_entries(
             println!("Moving {} to temp directory", entry.path.file_name().and_then(|f| f.to_str()).unwrap());
             std::fs::rename(&entry.path, &interim_path).unwrap();
         }
+
+        // Run `bs1770gain` as an external command.
+        let status =
+            Command::new("bs1770gain")
+            .arg("--replaygain")
+            .arg("-irt")
+            .arg("--output")
+            .arg(output_dir.as_os_str())
+            .arg(temp_dir_path.as_os_str())
+            .status()
+            .unwrap()
+        ;
+
+        assert!(status.success());
     }
 }
 
