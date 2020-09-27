@@ -109,7 +109,7 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
     let mut entries = Vec::with_capacity(flac_files.len());
 
     for flac_file in flac_files {
-        println!("{}", flac_file.display());
+        println!("Found input file: {}", flac_file.display());
         let flac_tag = Tag::read_from_path(&flac_file).unwrap();
 
         let track_num_str = expect_one(flac_tag.get_vorbis("tracknumber").unwrap());
@@ -140,6 +140,7 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
 }
 
 fn load_album_block(path: &Path) -> Block {
+    println!("Loading album block file: {}", path.display());
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
@@ -148,6 +149,7 @@ fn load_album_block(path: &Path) -> Block {
 }
 
 fn load_track_blocks(path: &Path) -> Vec<Block> {
+    println!("Loading track blocks file: {}", path.display());
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
@@ -171,6 +173,8 @@ fn process_entries(
     {
         let temp_dir = tempfile::tempdir().expect("unable to create temp dir");
         let temp_dir_path = temp_dir.path();
+
+        println!("Created temp dir: {}", temp_dir_path.display());
 
         for (entry, track_block) in entries.into_iter().zip(track_blocks) {
             let mut flac_tag = Tag::read_from_path(&entry.path).unwrap();
@@ -215,6 +219,7 @@ fn process_entries(
             let interim_file_name = format!("{}. {} - {}.{}", tno, ars, ttl, ext);
             let interim_path = temp_dir_path.join(interim_file_name);
 
+            println!("Moving {} to temp directory", entry.path.file_name().and_then(|f| f.to_str()).unwrap());
             std::fs::rename(&entry.path, &interim_path).unwrap();
         }
     }
