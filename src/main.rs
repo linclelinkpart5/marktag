@@ -34,6 +34,10 @@ type Block = HashMap<String, Vec<String>>;
 struct BlockWrapper(Block);
 
 #[derive(Deserialize)]
+#[serde(from = "BlockListRepr")]
+struct BlockListWrapper(Vec<Block>);
+
+#[derive(Deserialize)]
 #[serde(untagged)]
 enum BlockReprVal {
     One(String),
@@ -55,9 +59,25 @@ struct BlockRepr(HashMap<String, BlockReprVal>);
 
 impl From<BlockRepr> for BlockWrapper {
     fn from(br: BlockRepr) -> BlockWrapper {
+        let mut br = br;
         BlockWrapper(
-            br.0.into_iter()
+            br.0.drain()
             .map(|(k, v)| (k, v.into_many()))
+            .collect()
+        )
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(transparent)]
+struct BlockListRepr(Vec<BlockRepr>);
+
+impl From<BlockListRepr> for BlockListWrapper {
+    fn from(blr: BlockListRepr) -> BlockListWrapper {
+        let mut blr = blr;
+        BlockListWrapper(
+            blr.0.drain(..)
+            .map(|br| { BlockWrapper::from(br).0 })
             .collect()
         )
     }
@@ -132,7 +152,7 @@ fn load_track_blocks(path: &Path) -> Vec<Block> {
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
-    serde_json::from_str(&contents).unwrap()
+    serde_json::from_str::<BlockListWrapper>(&contents).unwrap().0
 }
 
 fn process_entries(
