@@ -178,6 +178,7 @@ fn process_entries(
         println!("Created temp dir: {}", temp_dir_path.display());
 
         for (entry, track_block) in entries.into_iter().zip(track_blocks) {
+            println!("Processing input file: {}", entry.path.display());
             let mut flac_tag = Tag::read_from_path(&entry.path).unwrap();
 
             // Remove all tags and pictures.
@@ -225,6 +226,8 @@ fn process_entries(
         }
 
         // Run `bs1770gain` as an external command.
+        // This should also copy the files to their final destination.
+        println!("Running bs1770gain");
         let status =
             Command::new("bs1770gain")
             .arg("--replaygain")
@@ -242,10 +245,14 @@ fn process_entries(
 
 fn main() {
     let opts = Opts::parse();
-    println!("{:?}", opts);
 
     let entries = collect_entries(&opts.source_dir);
 
+    // If no output directory is given, use the source directory.
+    let output_dir = opts.output_dir.unwrap_or(opts.source_dir);
+
     let album_block = load_album_block(&opts.album_block_file);
     let track_blocks = load_track_blocks(&opts.track_blocks_file);
+
+    process_entries(entries, album_block, track_blocks, &output_dir);
 }
