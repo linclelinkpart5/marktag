@@ -8,7 +8,7 @@ use std::process::Command;
 
 use clap::Clap;
 use metaflac::Tag;
-use metaflac::block::{BlockType, VorbisComment};
+use metaflac::block::BlockType;
 use serde::Deserialize;
 
 #[derive(Debug, Clap)]
@@ -25,7 +25,6 @@ struct Opts {
 struct Entry {
     path: PathBuf,
     track_num: usize,
-    block: VorbisComment,
 }
 
 type Block = HashMap<String, Vec<String>>;
@@ -120,12 +119,9 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
 
         assert!(expected_track_nums.remove(&track_num), "unexpected track number");
 
-        let block = flac_tag.vorbis_comments().cloned().unwrap();
-
         let entry = Entry {
             path: flac_file,
             track_num,
-            block,
         };
 
         entries.push(entry);
