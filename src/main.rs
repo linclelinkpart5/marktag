@@ -185,24 +185,22 @@ fn process_entries(
             flac_tag.remove_blocks(BlockType::VorbisComment);
             flac_tag.remove_blocks(BlockType::Picture);
 
-            let comments = &mut flac_tag.vorbis_comments_mut().comments;
-
             // Add in album block fields.
             for (k, v) in &album_block {
-                comments.insert(k.clone(), v.clone());
+                flac_tag.set_vorbis(k.clone(), v.clone());
             }
 
             // Add in track block fields.
             for (k, v) in track_block {
-                comments.insert(k, v);
+                flac_tag.set_vorbis(k, v);
             }
 
             // Add track index/count fields.
-            comments.insert(
+            flac_tag.set_vorbis(
                 String::from("tracknumber"),
                 vec![entry.track_num.to_string()],
             );
-            comments.insert(
+            flac_tag.set_vorbis(
                 String::from("totaltracks"),
                 vec![total_tracks.to_string()],
             );
