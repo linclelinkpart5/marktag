@@ -63,7 +63,7 @@ impl From<BlockRepr> for BlockWrapper {
     }
 }
 
-fn expect_one<T>(it: impl Iterator<Item = T>) -> T {
+fn expect_one<T, I: IntoIterator<Item = T>>(it: I) -> T {
     let mut it = it.into_iter();
     let first = it.next();
     let second = it.next();
@@ -180,6 +180,20 @@ fn process_entries(
                 String::from("totaltracks"),
                 vec![total_tracks.to_string()],
             );
+
+            flac_tag.save().unwrap();
+
+            // Create temporary interim file path.
+            let tno = format!("{:01$}", entry.track_num, num_digits);
+
+            let ars = flac_tag.get_vorbis("artist").unwrap().collect::<Vec<_>>().join(", ");
+
+            let ttl = expect_one(flac_tag.get_vorbis("title").unwrap());
+
+            let ext = entry.path.extension().unwrap().to_string_lossy();
+
+            let interim_file_name = format!("{}. {} - {}.{}", tno, ars, ttl, ext);
+            let interim_path = temp_dir_path.join(interim_file_name);
         }
     }
 }
