@@ -53,30 +53,26 @@ impl BlockReprVal {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(transparent)]
-struct BlockRepr(HashMap<String, BlockReprVal>);
+type BlockRepr = HashMap<String, BlockReprVal>;
 
 impl From<BlockRepr> for BlockWrapper {
     fn from(br: BlockRepr) -> BlockWrapper {
         let mut br = br;
         BlockWrapper(
-            br.0.drain()
+            br.drain()
             .map(|(k, v)| (k, v.into_many()))
             .collect()
         )
     }
 }
 
-#[derive(Deserialize)]
-#[serde(transparent)]
-struct BlockListRepr(Vec<BlockRepr>);
+type BlockListRepr = Vec<BlockRepr>;
 
 impl From<BlockListRepr> for BlockListWrapper {
     fn from(blr: BlockListRepr) -> BlockListWrapper {
         let mut blr = blr;
         BlockListWrapper(
-            blr.0.drain(..)
+            blr.drain(..)
             .map(|br| { BlockWrapper::from(br).0 })
             .collect()
         )
