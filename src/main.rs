@@ -11,6 +11,16 @@ use metaflac::Tag;
 use metaflac::block::BlockType;
 use serde::Deserialize;
 
+const SKIPPED_TAGS: &[&str] = &[
+    "tracknumber",
+    "comment",
+    "totaltracks",
+    "year",
+    "date",
+    "albumartist",
+    "album",
+];
+
 #[derive(Debug, Clap)]
 struct Opts {
     source_dir: PathBuf,
@@ -90,7 +100,7 @@ fn expect_one<T, I: IntoIterator<Item = T>>(it: I) -> T {
     }
 }
 
-fn collect_entries(source_dir: &Path) -> Vec<Entry> {
+fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
     let flac_files =
         source_dir
         .read_dir()
@@ -103,6 +113,11 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
 
     let mut expected_track_nums = (1..=flac_files.len()).collect::<HashSet<_>>();
     let mut entries = Vec::with_capacity(flac_files.len());
+    let mut emitted_tag_blocks = None;
+
+    if emit_existing {
+        emitted_tag_blocks = Some(Vec::with_capacity(flac_files.len()));
+    }
 
     for flac_file in flac_files {
         println!("Found input file: {}", flac_file.display());
@@ -112,6 +127,10 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
         let track_num = track_num_str.parse::<usize>().unwrap();
 
         println!("Track #{}", track_num);
+
+        emitted_tag_blocks.as_mut().map(|etbs| {
+            etbs.push((track_num, flac_tag));
+        });
 
         assert!(expected_track_nums.remove(&track_num), "unexpected track number");
 
@@ -128,6 +147,47 @@ fn collect_entries(source_dir: &Path) -> Vec<Entry> {
 
     // Sort the entries by track number.
     entries.sort_by_key(|e| e.track_num);
+
+    // Sort and emit source blocks, if any.
+    emitted_tag_blocks.as_mut().map(|etbs| {
+        etbs.sort_by_key(|(tn, _)| *tn);
+
+        let src_blocks =
+            etbs.drain(..)
+            .map(|(_, tag)| {
+                let mut block_repr = BlockRepr::new();
+
+                let keys = tag.vorbis_comments().unwrap().comments.keys();
+
+                for key in keys {
+                    let key = key.to_ascii_lowercase();
+                    if !SKIPPED_TAGS.contains(&key.as_str()) {
+                        let lookup =
+                            tag.get_vorbis(&key)
+                            .map(|v| {
+                                v.map(String::from)
+                                .collect::<Vec<_>>()
+                            })
+                        ;
+
+                        if let Some(mut vals) = lookup {
+                            let block_repr_val =
+                                if vals.len() == 1 { BlockReprVal::One(vals.swap_remove(0)) }
+                                else { BlockReprVal::Many(vals) }
+                            ;
+
+                            block_repr.insert(key, block_repr_val);
+                        }
+                    }
+                }
+
+                block_repr
+            })
+            .collect::<BlockListRepr>()
+        ;
+
+        // Serialize source blocks and print to stdout.
+    });
 
     entries
 }
@@ -236,7 +296,7 @@ fn process_entries(
 fn main() {
     let opts = Opts::parse();
 
-    let entries = collect_entries(&opts.source_dir);
+    let entries = collect_entries(&opts.source_dir, opts.emit_existing);
 
     // If no output directory is given, use the source directory.
     let output_dir = opts.output_dir.unwrap_or(opts.source_dir);
