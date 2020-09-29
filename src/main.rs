@@ -2,14 +2,14 @@
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use clap::Clap;
 use metaflac::Tag;
 use metaflac::block::BlockType;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 const SKIPPED_TAGS: &[&str] = &[
     "tracknumber",
@@ -43,11 +43,11 @@ type Block = HashMap<String, Vec<String>>;
 #[serde(from = "BlockRepr")]
 struct BlockWrapper(Block);
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(from = "BlockListRepr")]
 struct BlockListWrapper(Vec<Block>);
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 enum BlockReprVal {
     One(String),
@@ -187,6 +187,15 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
         ;
 
         // Serialize source blocks and print to stdout.
+        serde_json::to_writer_pretty(std::io::stdout(), &src_blocks).unwrap();
+        println!("");
+
+        // Pause for user input.
+        let mut stdout = std::io::stdout();
+        let mut stdin = std::io::stdin();
+        write!(stdout, "Press any key to continue...").unwrap();
+        stdout.flush().unwrap();
+        stdin.read(&mut [0u8]).unwrap();
     });
 
     entries
