@@ -1,5 +1,5 @@
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -37,7 +37,7 @@ struct Entry {
     track_num: usize,
 }
 
-type Block = HashMap<String, Vec<String>>;
+type Block = BTreeMap<String, Vec<String>>;
 
 #[derive(Deserialize)]
 #[serde(from = "BlockRepr")]
@@ -63,13 +63,12 @@ impl BlockReprVal {
     }
 }
 
-type BlockRepr = HashMap<String, BlockReprVal>;
+type BlockRepr = BTreeMap<String, BlockReprVal>;
 
 impl From<BlockRepr> for BlockWrapper {
     fn from(br: BlockRepr) -> BlockWrapper {
-        let mut br = br;
         BlockWrapper(
-            br.drain()
+            br.into_iter()
             .map(|(k, v)| (k, v.into_many()))
             .collect()
         )
