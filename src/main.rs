@@ -38,14 +38,17 @@ struct Entry {
 }
 
 type Block = BTreeMap<String, Vec<String>>;
+type BlockList = Vec<Block>;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(from = "BlockRepr")]
+#[serde(into = "BlockRepr")]
 struct BlockWrapper(Block);
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(from = "BlockListRepr")]
-struct BlockListWrapper(Vec<Block>);
+#[serde(into = "BlockListRepr")]
+struct BlockListWrapper(BlockList);
 
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
@@ -75,6 +78,22 @@ impl From<BlockRepr> for BlockWrapper {
     }
 }
 
+impl From<BlockWrapper> for BlockRepr {
+    fn from(bw: BlockWrapper) -> BlockRepr {
+        bw.0.into_iter()
+        .map(|(k, v)| {
+            let mut v = v;
+            let br_val =
+                if v.len() == 1 { BlockReprVal::One(v.swap_remove(0)) }
+                else { BlockReprVal::Many(v) }
+            ;
+
+            (k, br_val)
+        })
+        .collect()
+    }
+}
+
 type BlockListRepr = Vec<BlockRepr>;
 
 impl From<BlockListRepr> for BlockListWrapper {
@@ -85,6 +104,16 @@ impl From<BlockListRepr> for BlockListWrapper {
             .map(|br| { BlockWrapper::from(br).0 })
             .collect()
         )
+    }
+}
+
+impl From<BlockListWrapper> for BlockListRepr {
+    fn from(blw: BlockListWrapper) -> BlockListRepr {
+        let mut blw = blw;
+
+        blw.0.drain(..)
+        .map(|b| BlockRepr::from(BlockWrapper(b)))
+        .collect()
     }
 }
 
@@ -209,7 +238,7 @@ fn load_album_block(path: &Path) -> Block {
     serde_json::from_str::<BlockWrapper>(&contents).unwrap().0
 }
 
-fn load_track_blocks(path: &Path) -> Vec<Block> {
+fn load_track_blocks(path: &Path) -> BlockList {
     println!("Loading track blocks file: {}", path.display());
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
@@ -218,10 +247,22 @@ fn load_track_blocks(path: &Path) -> Vec<Block> {
     serde_json::from_str::<BlockListWrapper>(&contents).unwrap().0
 }
 
+/// Helper function to write the block data that was used for input to files.
+/// The files are written to a given output directory path.
+fn write_block_files(output_dir: &Path, album_block: &BlockWrapper, track_blocks: &BlockListWrapper) {
+    let album_block_path = output_dir.join("album.json");
+    let album_block_file = File::create(&album_block_path).unwrap();
+    serde_json::to_writer_pretty(album_block_file, album_block).unwrap();
+
+    let track_blocks_path = output_dir.join("track.json");
+    let track_blocks_file = File::create(&track_blocks_path).unwrap();
+    serde_json::to_writer_pretty(track_blocks_file, track_blocks).unwrap();
+}
+
 fn process_entries(
     entries: Vec<Entry>,
     album_block: Block,
-    track_blocks: Vec<Block>,
+    track_blocks: BlockList,
     output_dir: &Path,
 )
 {
@@ -311,6 +352,17 @@ fn main() {
 
     let album_block = load_album_block(&opts.album_block_file);
     let track_blocks = load_track_blocks(&opts.track_blocks_file);
+
+    // Write out the input blocks to the output directory.
+    // This involves wrapping up the block data just for now, for serialization
+    // purposes.
+    let abw = BlockWrapper(album_block);
+    let tblw = BlockListWrapper(track_blocks);
+    write_block_files(&output_dir, &abw, &tblw);
+
+    // Unpackage the block data.
+    let album_block = abw.0;
+    let track_blocks = tblw.0;
 
     process_entries(entries, album_block, track_blocks, &output_dir);
 }
