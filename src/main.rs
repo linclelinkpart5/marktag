@@ -16,9 +16,16 @@ const SKIPPED_TAGS: &[&str] = &[
     "comment",
     "totaltracks",
     "year",
-    "date",
+    // "date",
     "albumartist",
     "album",
+    "encoder",
+    "replaygain_album_gain",
+    "replaygain_album_peak",
+    "replaygain_algorithm",
+    "replaygain_reference_loudness",
+    "replaygain_track_gain",
+    "replaygain_track_peak",
 ];
 
 #[derive(Debug, Clap)]
