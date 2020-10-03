@@ -31,7 +31,9 @@ const SKIPPED_TAGS: &[&str] = &[
 #[derive(Debug, Clap)]
 struct Opts {
     source_dir: PathBuf,
+    #[clap(long, default_value = "/home/mark/album.json")]
     album_block_file: PathBuf,
+    #[clap(long, default_value = "/home/mark/track.json")]
     track_blocks_file: PathBuf,
     #[clap(long)]
     emit_existing: bool,
