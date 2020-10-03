@@ -22,10 +22,12 @@ const SKIPPED_TAGS: &[&str] = &[
     "encoder",
     "replaygain_album_gain",
     "replaygain_album_peak",
+    "replaygain_album_range",
     "replaygain_algorithm",
     "replaygain_reference_loudness",
     "replaygain_track_gain",
     "replaygain_track_peak",
+    "replaygain_track_range",
 ];
 
 #[derive(Debug, Clap)]
