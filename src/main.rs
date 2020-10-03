@@ -328,7 +328,11 @@ fn process_entries(
 
             let ext = entry.path.extension().unwrap().to_string_lossy();
 
-            let interim_file_name = format!("{}. {} - {}.{}", tno, ars, ttl, ext);
+            let mut interim_file_name = format!("{}. {} - {}.{}", tno, ars, ttl, ext);
+
+            // Fixing bug with fields that have path separators embedded in them.
+            interim_file_name.retain(|c| c != '/');
+
             let interim_path = temp_dir_path.join(interim_file_name);
 
             println!("Moving {} to temp directory", entry.path.file_name().and_then(|f| f.to_str()).unwrap());
