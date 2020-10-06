@@ -261,13 +261,17 @@ fn load_track_blocks(path: &Path) -> BlockList {
 /// Helper function to write the block data that was used for input to files.
 /// The files are written to a given output directory path.
 fn write_block_files(output_dir: &Path, album_block: &BlockWrapper, track_blocks: &BlockListWrapper) {
+    // Write out the album block, appending a newline at the end.
     let album_block_path = output_dir.join("album.json");
-    let album_block_file = File::create(&album_block_path).unwrap();
-    serde_json::to_writer_pretty(album_block_file, album_block).unwrap();
+    let mut serialized = serde_json::to_string_pretty(album_block).unwrap();
+    serialized.push('\n');
+    std::fs::write(album_block_path, &serialized).unwrap();
 
+    // Write out the track blocks, appending a newline at the end.
     let track_blocks_path = output_dir.join("track.json");
-    let track_blocks_file = File::create(&track_blocks_path).unwrap();
-    serde_json::to_writer_pretty(track_blocks_file, track_blocks).unwrap();
+    let mut serialized = serde_json::to_string_pretty(track_blocks).unwrap();
+    serialized.push('\n');
+    std::fs::write(track_blocks_path, &serialized).unwrap();
 }
 
 fn process_entries(
