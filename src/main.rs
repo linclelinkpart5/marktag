@@ -1,5 +1,8 @@
 
-use std::collections::{BTreeMap, HashSet};
+mod block;
+mod opts;
+
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -9,7 +12,9 @@ use std::process::Command;
 use clap::Clap;
 use metaflac::Tag;
 use metaflac::block::BlockType;
-use serde::{Deserialize, Serialize};
+
+use crate::block::*;
+use crate::opts::Opts;
 
 const SKIPPED_TAGS: &[&str] = &[
     "tracknumber",
@@ -30,102 +35,9 @@ const SKIPPED_TAGS: &[&str] = &[
     "replaygain_track_range",
 ];
 
-#[derive(Debug, Clap)]
-struct Opts {
-    source_dir: PathBuf,
-    #[clap(long, default_value = "/home/mark/album.json")]
-    album_block_file: PathBuf,
-    #[clap(long, default_value = "/home/mark/track.json")]
-    track_blocks_file: PathBuf,
-    #[clap(long)]
-    emit_existing: bool,
-    #[clap(long)]
-    output_dir: Option<PathBuf>,
-}
-
 struct Entry {
     path: PathBuf,
     track_num: usize,
-}
-
-type Block = BTreeMap<String, Vec<String>>;
-type BlockList = Vec<Block>;
-
-#[derive(Clone, Deserialize, Serialize)]
-#[serde(from = "BlockRepr")]
-#[serde(into = "BlockRepr")]
-struct BlockWrapper(Block);
-
-#[derive(Clone, Deserialize, Serialize)]
-#[serde(from = "BlockListRepr")]
-#[serde(into = "BlockListRepr")]
-struct BlockListWrapper(BlockList);
-
-#[derive(Deserialize, Serialize)]
-#[serde(untagged)]
-enum BlockReprVal {
-    One(String),
-    Many(Vec<String>),
-}
-
-impl BlockReprVal {
-    fn into_many(self) -> Vec<String> {
-        match self {
-            Self::One(s) => vec![s],
-            Self::Many(v) => v,
-        }
-    }
-}
-
-type BlockRepr = BTreeMap<String, BlockReprVal>;
-
-impl From<BlockRepr> for BlockWrapper {
-    fn from(br: BlockRepr) -> BlockWrapper {
-        BlockWrapper(
-            br.into_iter()
-            .map(|(k, v)| (k, v.into_many()))
-            .collect()
-        )
-    }
-}
-
-impl From<BlockWrapper> for BlockRepr {
-    fn from(bw: BlockWrapper) -> BlockRepr {
-        bw.0.into_iter()
-        .map(|(k, v)| {
-            let mut v = v;
-            let br_val =
-                if v.len() == 1 { BlockReprVal::One(v.swap_remove(0)) }
-                else { BlockReprVal::Many(v) }
-            ;
-
-            (k, br_val)
-        })
-        .collect()
-    }
-}
-
-type BlockListRepr = Vec<BlockRepr>;
-
-impl From<BlockListRepr> for BlockListWrapper {
-    fn from(blr: BlockListRepr) -> BlockListWrapper {
-        let mut blr = blr;
-        BlockListWrapper(
-            blr.drain(..)
-            .map(|br| { BlockWrapper::from(br).0 })
-            .collect()
-        )
-    }
-}
-
-impl From<BlockListWrapper> for BlockListRepr {
-    fn from(blw: BlockListWrapper) -> BlockListRepr {
-        let mut blw = blw;
-
-        blw.0.drain(..)
-        .map(|b| BlockRepr::from(BlockWrapper(b)))
-        .collect()
-    }
 }
 
 fn expect_one<T, I: IntoIterator<Item = T>>(it: I) -> T {
