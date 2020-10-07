@@ -291,11 +291,16 @@ fn main() {
 
     let entries = collect_entries(&opts.source_dir, opts.emit_existing);
 
-    // If no output directory is given, use the source directory.
-    let output_dir = opts.output_dir.unwrap_or(opts.source_dir);
+    let source_dir = opts.source_dir;
 
-    let album_block = load_album_block(&opts.album_block_file);
-    let track_blocks = load_track_blocks(&opts.track_blocks_file);
+    let album_block_file = opts.album_block_file.unwrap_or_else(|| source_dir.join("album.json"));
+    let track_blocks_file = opts.track_blocks_file.unwrap_or_else(|| source_dir.join("track.json"));
+
+    // If no output directory is given, use the source directory.
+    let output_dir = opts.output_dir.unwrap_or(source_dir);
+
+    let album_block = load_album_block(&album_block_file);
+    let track_blocks = load_track_blocks(&track_blocks_file);
 
     // Write out the input blocks to the output directory.
     // This involves wrapping up the block data just for now, for serialization
