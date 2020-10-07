@@ -51,6 +51,64 @@ fn expect_one<T, I: IntoIterator<Item = T>>(it: I) -> T {
     }
 }
 
+/// Pauses the program, and outputs a prompt for the user to
+/// press Enter to continue.
+fn pause() {
+    let mut stdout = std::io::stdout();
+    let mut stdin = std::io::stdin();
+    write!(stdout, "Press <Enter> to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin.read(&mut [0u8]).unwrap();
+}
+
+fn emit_source_tags(tags: impl Iterator<Item = Tag>) {
+    let mut src_blocks = Vec::new();
+    let mut count = 0usize;
+
+    for tag in tags {
+        count += 1;
+
+        let mut block_repr = BlockRepr::new();
+
+        let keys = tag.vorbis_comments().unwrap().comments.keys();
+
+        for key in keys {
+            let key = key.to_ascii_lowercase();
+            if !SKIPPED_TAGS.contains(&key.as_str()) {
+                let lookup =
+                    tag.get_vorbis(&key)
+                    .map(|v| {
+                        v.map(String::from)
+                        .collect::<Vec<_>>()
+                    })
+                ;
+
+                if let Some(mut vals) = lookup {
+                    let block_repr_val =
+                        if vals.len() == 1 { BlockReprVal::One(vals.swap_remove(0)) }
+                        else { BlockReprVal::Many(vals) }
+                    ;
+
+                    block_repr.insert(key, block_repr_val);
+                }
+            }
+        }
+
+        src_blocks.push(block_repr);
+    }
+
+    println!("Emitting existing tags for {} input file(s) below this line...", count);
+    println!("----------------------------------------------------------------");
+
+    // Serialize source blocks and print to stdout.
+    serde_json::to_writer_pretty(std::io::stdout(), &src_blocks).unwrap();
+    println!("");
+    println!("----------------------------------------------------------------");
+
+    // Pause for user input.
+    pause();
+}
+
 fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
     let flac_files =
         source_dir
@@ -103,50 +161,9 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
     emitted_tag_blocks.as_mut().map(|etbs| {
         etbs.sort_by_key(|(tn, _)| *tn);
 
-        let src_blocks =
-            etbs.drain(..)
-            .map(|(_, tag)| {
-                let mut block_repr = BlockRepr::new();
+        let tags = etbs.drain(..).map(|(_, tag)| tag);
 
-                let keys = tag.vorbis_comments().unwrap().comments.keys();
-
-                for key in keys {
-                    let key = key.to_ascii_lowercase();
-                    if !SKIPPED_TAGS.contains(&key.as_str()) {
-                        let lookup =
-                            tag.get_vorbis(&key)
-                            .map(|v| {
-                                v.map(String::from)
-                                .collect::<Vec<_>>()
-                            })
-                        ;
-
-                        if let Some(mut vals) = lookup {
-                            let block_repr_val =
-                                if vals.len() == 1 { BlockReprVal::One(vals.swap_remove(0)) }
-                                else { BlockReprVal::Many(vals) }
-                            ;
-
-                            block_repr.insert(key, block_repr_val);
-                        }
-                    }
-                }
-
-                block_repr
-            })
-            .collect::<BlockListRepr>()
-        ;
-
-        // Serialize source blocks and print to stdout.
-        serde_json::to_writer_pretty(std::io::stdout(), &src_blocks).unwrap();
-        println!("");
-
-        // Pause for user input.
-        let mut stdout = std::io::stdout();
-        let mut stdin = std::io::stdin();
-        write!(stdout, "Press any key to continue...").unwrap();
-        stdout.flush().unwrap();
-        stdin.read(&mut [0u8]).unwrap();
+        emit_source_tags(tags);
     });
 
     entries
