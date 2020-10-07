@@ -114,8 +114,7 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
         source_dir
         .read_dir()
         .unwrap()
-        .map(Result::unwrap)
-        .map(|e| e.path())
+        .map(|e| e.unwrap().path())
         .filter(|p| p.extension() == Some(OsStr::new("flac")))
         .collect::<Vec<_>>()
     ;
@@ -134,8 +133,6 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
 
         let track_num_str = expect_one(flac_tag.get_vorbis("tracknumber").unwrap());
         let track_num = track_num_str.parse::<usize>().unwrap();
-
-        println!("Track #{}", track_num);
 
         emitted_tag_blocks.as_mut().map(|etbs| {
             etbs.push((track_num, flac_tag));
@@ -170,37 +167,36 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
 }
 
 fn load_album_block(path: &Path) -> Block {
-    println!("Loading album block file: {}", path.display());
-    let mut file = File::open(path).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-
+    println!("Loading album file: {}", path.display());
+    let contents = std::fs::read_to_string(path).unwrap();
     serde_json::from_str::<BlockWrapper>(&contents).unwrap().0
 }
 
 fn load_track_blocks(path: &Path) -> BlockList {
-    println!("Loading track blocks file: {}", path.display());
-    let mut file = File::open(path).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-
+    println!("Loading track file: {}", path.display());
+    let contents = std::fs::read_to_string(path).unwrap();
     serde_json::from_str::<BlockListWrapper>(&contents).unwrap().0
 }
 
 /// Helper function to write the block data that was used for input to files.
 /// The files are written to a given output directory path.
-fn write_block_files(output_dir: &Path, album_block: &BlockWrapper, track_blocks: &BlockListWrapper) {
+fn write_block_files(
+    output_dir: &Path,
+    album_block: &BlockWrapper,
+    track_blocks: &BlockListWrapper,
+)
+{
     // Write out the album block, appending a newline at the end.
     let album_block_path = output_dir.join("album.json");
-    let mut serialized = serde_json::to_string_pretty(album_block).unwrap();
-    serialized.push('\n');
-    std::fs::write(album_block_path, &serialized).unwrap();
+    let serialized = serde_json::to_string_pretty(album_block).unwrap();
+    let mut file = File::create(album_block_path).unwrap();
+    writeln!(&mut file, "{}", &serialized).unwrap();
 
     // Write out the track blocks, appending a newline at the end.
     let track_blocks_path = output_dir.join("track.json");
-    let mut serialized = serde_json::to_string_pretty(track_blocks).unwrap();
-    serialized.push('\n');
-    std::fs::write(track_blocks_path, &serialized).unwrap();
+    let serialized = serde_json::to_string_pretty(track_blocks).unwrap();
+    let mut file = File::create(track_blocks_path).unwrap();
+    writeln!(&mut file, "{}", &serialized).unwrap();
 }
 
 fn process_entries(
@@ -268,7 +264,7 @@ fn process_entries(
 
             let interim_path = temp_dir_path.join(interim_file_name);
 
-            println!("Moving {} to temp directory", entry.path.file_name().and_then(|f| f.to_str()).unwrap());
+            println!("Moving file to temp dir: {}", entry.path.display());
             std::fs::rename(&entry.path, &interim_path).unwrap();
         }
 
