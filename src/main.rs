@@ -262,9 +262,9 @@ fn process_entries(
             // Fixing bug with fields that have path separators embedded in them.
             interim_file_name.retain(|c| c != '/');
 
-            let interim_path = temp_dir_path.join(interim_file_name);
+            let interim_path = temp_dir_path.join(&interim_file_name);
 
-            println!("Moving file to temp dir: {}", entry.path.display());
+            println!("Moving file to temp dir: {}", interim_file_name);
             std::fs::rename(&entry.path, &interim_path).unwrap();
         }
 
