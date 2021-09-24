@@ -13,5 +13,7 @@ pub(crate) struct Opts {
     #[clap(long)]
     pub(crate) emit_existing: bool,
     #[clap(long)]
+    pub(crate) emit_existing_to: Option<PathBuf>,
+    #[clap(long)]
     pub(crate) output_dir: Option<PathBuf>,
 }

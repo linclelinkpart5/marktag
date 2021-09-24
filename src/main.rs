@@ -61,7 +61,7 @@ fn pause() {
     stdin.read(&mut [0u8]).unwrap();
 }
 
-fn emit_source_tags(tags: impl Iterator<Item = Tag>) {
+fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_fp: Option<&Path>) {
     let mut src_blocks = Vec::new();
     let mut count = 0usize;
 
@@ -101,7 +101,9 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>) {
     println!("----------------------------------------------------------------");
 
     // Serialize source blocks and print to stdout.
-    serde_json::to_writer_pretty(std::io::stdout(), &src_blocks).unwrap();
+    let json_str = serde_json::to_string_pretty(&src_blocks).unwrap();
+    println!("{}", json_str);
+    emit_fp.map(|fp| std::fs::write(fp, &json_str).unwrap());
     println!("");
     println!("----------------------------------------------------------------");
 
@@ -109,7 +111,7 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>) {
     pause();
 }
 
-fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
+fn collect_entries(source_dir: &Path, emit_existing: bool, emit_existing_to: Option<PathBuf>) -> Vec<Entry> {
     let flac_files =
         source_dir
         .read_dir()
@@ -123,7 +125,7 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
     let mut entries = Vec::with_capacity(flac_files.len());
     let mut emitted_tag_blocks = None;
 
-    if emit_existing {
+    if emit_existing || emit_existing_to.is_some() {
         emitted_tag_blocks = Some(Vec::with_capacity(flac_files.len()));
     }
 
@@ -160,7 +162,7 @@ fn collect_entries(source_dir: &Path, emit_existing: bool) -> Vec<Entry> {
 
         let tags = etbs.drain(..).map(|(_, tag)| tag);
 
-        emit_source_tags(tags);
+        emit_source_tags(tags, emit_existing_to.as_ref().map(|p| p.as_path()));
     });
 
     entries
@@ -289,7 +291,7 @@ fn process_entries(
 fn main() {
     let opts = Opts::parse();
 
-    let entries = collect_entries(&opts.source_dir, opts.emit_existing);
+    let entries = collect_entries(&opts.source_dir, opts.emit_existing, opts.emit_existing_to);
 
     let source_dir = opts.source_dir;
 
