@@ -61,7 +61,7 @@ fn pause() {
     stdin.read(&mut [0u8]).unwrap();
 }
 
-fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_fp: Option<&Path>) {
+fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_stdout: bool, emit_fp: Option<&Path>) {
     let mut src_blocks = Vec::new();
     let mut count = 0usize;
 
@@ -97,15 +97,19 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_fp: Option<&Path>) {
         src_blocks.push(block_repr);
     }
 
-    println!("Emitting existing tags for {} input file(s) below this line...", count);
-    println!("----------------------------------------------------------------");
-
-    // Serialize source blocks and print to stdout.
+    // Serialize source blocks to a string.
     let json_str = serde_json::to_string_pretty(&src_blocks).unwrap();
-    println!("{}", json_str);
+
+    if emit_stdout {
+        println!("Emitting existing tags for {} input file(s) below this line...", count);
+        println!("----------------------------------------------------------------");
+        println!("{}", json_str);
+        println!("");
+        println!("----------------------------------------------------------------");
+    }
+
+    // Emit the source blocks to a file, if provided.
     emit_fp.map(|fp| std::fs::write(fp, &json_str).unwrap());
-    println!("");
-    println!("----------------------------------------------------------------");
 
     // Pause for user input.
     pause();
@@ -162,7 +166,7 @@ fn collect_entries(source_dir: &Path, emit_existing: bool, emit_existing_to: Opt
 
         let tags = etbs.drain(..).map(|(_, tag)| tag);
 
-        emit_source_tags(tags, emit_existing_to.as_ref().map(|p| p.as_path()));
+        emit_source_tags(tags, emit_existing, emit_existing_to.as_ref().map(|p| p.as_path()));
     });
 
     entries
