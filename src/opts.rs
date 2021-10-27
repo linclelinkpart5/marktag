@@ -1,9 +1,9 @@
 
 use std::path::PathBuf;
 
-use clap::Clap;
+use clap::Parser;
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 pub(crate) struct Opts {
     pub(crate) source_dir: PathBuf,
     #[clap(long)]

@@ -9,7 +9,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use clap::Clap;
+use clap::Parser;
 use metaflac::Tag;
 use metaflac::block::BlockType;
 
