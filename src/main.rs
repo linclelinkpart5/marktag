@@ -21,7 +21,7 @@ const SKIPPED_TAGS: &[&str] = &[
     "comment",
     "totaltracks",
     "year",
-    // "date",
+    "date",
     "albumartist",
     "album",
     "encoder",
@@ -33,6 +33,12 @@ const SKIPPED_TAGS: &[&str] = &[
     "replaygain_track_gain",
     "replaygain_track_peak",
     "replaygain_track_range",
+    "copyright",
+    "description",
+    "discnumber",
+    "disctotal",
+    "genre",
+    "tracktotal",
 ];
 
 struct Entry {
