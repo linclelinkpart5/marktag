@@ -1,4 +1,3 @@
-
 mod block;
 mod opts;
 
@@ -10,8 +9,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use clap::Parser;
-use metaflac::Tag;
 use metaflac::block::BlockType;
+use metaflac::Tag;
 
 use crate::block::*;
 use crate::opts::Opts;
@@ -81,19 +80,16 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_stdout: bool, emit_fp:
         for key in keys {
             let key = key.to_ascii_lowercase();
             if !SKIPPED_TAGS.contains(&key.as_str()) {
-                let lookup =
-                    tag.get_vorbis(&key)
-                    .map(|v| {
-                        v.map(String::from)
-                        .collect::<Vec<_>>()
-                    })
-                ;
+                let lookup = tag
+                    .get_vorbis(&key)
+                    .map(|v| v.map(String::from).collect::<Vec<_>>());
 
                 if let Some(mut vals) = lookup {
-                    let block_repr_val =
-                        if vals.len() == 1 { BlockReprVal::One(vals.swap_remove(0)) }
-                        else { BlockReprVal::Many(vals) }
-                    ;
+                    let block_repr_val = if vals.len() == 1 {
+                        BlockReprVal::One(vals.swap_remove(0))
+                    } else {
+                        BlockReprVal::Many(vals)
+                    };
 
                     block_repr.insert(key, block_repr_val);
                 }
@@ -107,7 +103,10 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_stdout: bool, emit_fp:
     let json_str = serde_json::to_string_pretty(&src_blocks).unwrap();
 
     if emit_stdout {
-        println!("Emitting existing tags for {} input file(s) below this line...", count);
+        println!(
+            "Emitting existing tags for {} input file(s) below this line...",
+            count
+        );
         println!("----------------------------------------------------------------");
         println!("{}", json_str);
         println!("");
@@ -121,15 +120,17 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_stdout: bool, emit_fp:
     pause();
 }
 
-fn collect_entries(source_dir: &Path, emit_existing: bool, emit_existing_to: Option<PathBuf>) -> Vec<Entry> {
-    let flac_files =
-        source_dir
+fn collect_entries(
+    source_dir: &Path,
+    emit_existing: bool,
+    emit_existing_to: Option<PathBuf>,
+) -> Vec<Entry> {
+    let flac_files = source_dir
         .read_dir()
         .unwrap()
         .map(|e| e.unwrap().path())
         .filter(|p| p.extension() == Some(OsStr::new("flac")))
-        .collect::<Vec<_>>()
-    ;
+        .collect::<Vec<_>>();
 
     let mut expected_track_nums = (1..=flac_files.len()).collect::<HashSet<_>>();
     let mut entries = Vec::with_capacity(flac_files.len());
@@ -150,7 +151,10 @@ fn collect_entries(source_dir: &Path, emit_existing: bool, emit_existing_to: Opt
             etbs.push((track_num, flac_tag));
         });
 
-        assert!(expected_track_nums.remove(&track_num), "unexpected track number");
+        assert!(
+            expected_track_nums.remove(&track_num),
+            "unexpected track number"
+        );
 
         let entry = Entry {
             path: flac_file,
@@ -172,7 +176,11 @@ fn collect_entries(source_dir: &Path, emit_existing: bool, emit_existing_to: Opt
 
         let tags = etbs.drain(..).map(|(_, tag)| tag);
 
-        emit_source_tags(tags, emit_existing, emit_existing_to.as_ref().map(|p| p.as_path()));
+        emit_source_tags(
+            tags,
+            emit_existing,
+            emit_existing_to.as_ref().map(|p| p.as_path()),
+        );
     });
 
     entries
@@ -187,7 +195,9 @@ fn load_album_block(path: &Path) -> Block {
 fn load_track_blocks(path: &Path) -> BlockList {
     println!("Loading track file: {}", path.display());
     let contents = std::fs::read_to_string(path).unwrap();
-    serde_json::from_str::<BlockListWrapper>(&contents).unwrap().0
+    serde_json::from_str::<BlockListWrapper>(&contents)
+        .unwrap()
+        .0
 }
 
 /// Helper function to write the block data that was used for input to files.
@@ -196,8 +206,7 @@ fn write_block_files(
     output_dir: &Path,
     album_block: &BlockWrapper,
     track_blocks: &BlockListWrapper,
-)
-{
+) {
     // Write out the album block, appending a newline at the end.
     let album_block_path = output_dir.join("album.json");
     let serialized = serde_json::to_string_pretty(album_block).unwrap();
@@ -216,8 +225,7 @@ fn process_entries(
     album_block: Block,
     track_blocks: BlockList,
     output_dir: &Path,
-)
-{
+) {
     // Ensure equal numbers of entries and track blocks.
     assert_eq!(entries.len(), track_blocks.len());
 
@@ -253,17 +261,18 @@ fn process_entries(
                 String::from("tracknumber"),
                 vec![entry.track_num.to_string()],
             );
-            flac_tag.set_vorbis(
-                String::from("totaltracks"),
-                vec![total_tracks.to_string()],
-            );
+            flac_tag.set_vorbis(String::from("totaltracks"), vec![total_tracks.to_string()]);
 
             flac_tag.save().unwrap();
 
             // Create temporary interim file path.
             let tno = format!("{:01$}", entry.track_num, num_digits);
 
-            let ars = flac_tag.get_vorbis("artist").unwrap().collect::<Vec<_>>().join(", ");
+            let ars = flac_tag
+                .get_vorbis("artist")
+                .unwrap()
+                .collect::<Vec<_>>()
+                .join(", ");
 
             let ttl = expect_one(flac_tag.get_vorbis("title").unwrap());
 
@@ -283,16 +292,14 @@ fn process_entries(
         // Run `bs1770gain` as an external command.
         // This should also copy the files to their final destination.
         println!("Running bs1770gain");
-        let status =
-            Command::new("bs1770gain")
+        let status = Command::new("bs1770gain")
             .arg("--replaygain")
             .arg("-irt")
             .arg("--output")
             .arg(output_dir.as_os_str())
             .arg(temp_dir_path.as_os_str())
             .status()
-            .unwrap()
-        ;
+            .unwrap();
 
         assert!(status.success());
     }
@@ -305,8 +312,12 @@ fn main() {
 
     let source_dir = opts.source_dir;
 
-    let album_block_file = opts.album_block_file.unwrap_or_else(|| source_dir.join("album.json"));
-    let track_blocks_file = opts.track_blocks_file.unwrap_or_else(|| source_dir.join("track.json"));
+    let album_block_file = opts
+        .album_block_file
+        .unwrap_or_else(|| source_dir.join("album.json"));
+    let track_blocks_file = opts
+        .track_blocks_file
+        .unwrap_or_else(|| source_dir.join("track.json"));
 
     // If no output directory is given, use the source directory.
     let output_dir = opts.output_dir.unwrap_or(source_dir);
