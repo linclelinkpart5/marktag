@@ -1,8 +1,8 @@
 [package]
-name = "marktag"
-version = "0.2.6"
 authors = ["Mark LeMoine <linclelinkpart5@gmail.com>"]
 edition = "2018"
+name = "marktag"
+version = "0.2.6"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,3 +12,7 @@ metaflac = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3"
+
+[dev-dependencies]
+big_s = "1"
+maplit = "1"
