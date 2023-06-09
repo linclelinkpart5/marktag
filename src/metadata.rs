@@ -24,6 +24,7 @@ pub struct Metadata {
     tracks: MetaBlockList,
 }
 
+#[cfg(test)]
 mod tests {
     use super::MetaVal::{Many, One};
     use super::*;
