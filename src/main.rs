@@ -1,11 +1,12 @@
 mod block;
+mod helpers;
 mod metadata;
 mod opts;
 
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -44,27 +45,6 @@ const SKIPPED_TAGS: &[&str] = &[
 struct Entry {
     path: PathBuf,
     track_num: usize,
-}
-
-fn expect_one<T, I: IntoIterator<Item = T>>(it: I) -> T {
-    let mut it = it.into_iter();
-    let first = it.next();
-    let second = it.next();
-
-    match (first, second) {
-        (Some(e), None) => e,
-        _ => panic!("did not find exactly one value"),
-    }
-}
-
-/// Pauses the program, and outputs a prompt for the user to
-/// press Enter to continue.
-fn pause() {
-    let mut stdout = std::io::stdout();
-    let mut stdin = std::io::stdin();
-    write!(stdout, "Press <Enter> to continue...").unwrap();
-    stdout.flush().unwrap();
-    stdin.read(&mut [0u8]).unwrap();
 }
 
 fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_stdout: bool, emit_fp: Option<&Path>) {
@@ -118,7 +98,7 @@ fn emit_source_tags(tags: impl Iterator<Item = Tag>, emit_stdout: bool, emit_fp:
     emit_fp.map(|fp| std::fs::write(fp, &json_str).unwrap());
 
     // Pause for user input.
-    pause();
+    helpers::pause();
 }
 
 fn collect_entries(
@@ -145,7 +125,7 @@ fn collect_entries(
         println!("Found input file: {}", flac_file.display());
         let flac_tag = Tag::read_from_path(&flac_file).unwrap();
 
-        let track_num_str = expect_one(flac_tag.get_vorbis("tracknumber").unwrap());
+        let track_num_str = helpers::expect_one(flac_tag.get_vorbis("tracknumber").unwrap());
         let track_num = track_num_str.parse::<usize>().unwrap();
 
         emitted_tag_blocks.as_mut().map(|etbs| {
@@ -275,7 +255,7 @@ fn process_entries(
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            let ttl = expect_one(flac_tag.get_vorbis("title").unwrap());
+            let ttl = helpers::expect_one(flac_tag.get_vorbis("title").unwrap());
 
             let ext = entry.path.extension().unwrap().to_string_lossy();
 
