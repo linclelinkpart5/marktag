@@ -3,6 +3,7 @@ mod helpers;
 mod metadata;
 mod opts;
 mod reader;
+mod writer;
 
 use std::collections::HashSet;
 use std::ffi::OsStr;
