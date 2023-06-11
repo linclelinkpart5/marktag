@@ -2,6 +2,7 @@ mod block;
 mod helpers;
 mod metadata;
 mod opts;
+mod reader;
 
 use std::collections::HashSet;
 use std::ffi::OsStr;

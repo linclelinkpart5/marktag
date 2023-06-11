@@ -1,4 +1,10 @@
 use std::io::{Read, Write};
+use std::path::PathBuf;
+
+pub(crate) struct Entry {
+    pub path: PathBuf,
+    pub track_num: usize,
+}
 
 /// Pauses the program, and outputs a prompt for the user to
 /// press Enter to continue.
