@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use metaflac::Tag;
 
 use crate::helpers::{self, Track};
-use crate::metadata::{MetaBlock, MetaBlockList, MetaVal};
+use crate::metadata::{MetaBlock, MetaBlockList, MetaVal, Metadata};
 
 const SKIPPED_TAGS: &[&str] = &[
     "album",
@@ -31,6 +31,47 @@ const SKIPPED_TAGS: &[&str] = &[
     "tracktotal",
     "year",
 ];
+
+pub(crate) enum IncomingMetadataSource<'a> {
+    Unified(Option<&'a Path>),
+    AlbumTrack(Option<&'a Path>, Option<&'a Path>),
+}
+
+impl<'a> IncomingMetadataSource<'a> {
+    pub fn load_metadata(&self) -> Metadata {
+        match self {
+            Self::Unified(p) => {
+                let path = p.unwrap_or(Path::new("meta.json"));
+
+                println!("Loading incoming metadata (unified): {}", path.display());
+
+                let contents = std::fs::read_to_string(path).unwrap();
+                serde_json::from_str(&contents).unwrap()
+            }
+            Self::AlbumTrack(ap, tp) => {
+                let album_path = ap.unwrap_or(Path::new("album.json"));
+                let track_path = tp.unwrap_or(Path::new("track.json"));
+
+                println!(
+                    "Loading incoming metadata (album, track): ({}, {})",
+                    album_path.display(),
+                    track_path.display()
+                );
+
+                let contents = std::fs::read_to_string(album_path).unwrap();
+                let album_block: MetaBlock = serde_json::from_str(&contents).unwrap();
+
+                let contents = std::fs::read_to_string(track_path).unwrap();
+                let track_blocks: MetaBlockList = serde_json::from_str(&contents).unwrap();
+
+                Metadata {
+                    album: album_block,
+                    tracks: track_blocks,
+                }
+            }
+        }
+    }
+}
 
 pub(crate) fn emit_source_tags(
     tags: impl Iterator<Item = Tag>,
