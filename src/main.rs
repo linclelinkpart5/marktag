@@ -7,21 +7,19 @@ mod writer;
 use std::path::Path;
 
 use clap::Parser;
-use metaflac::block::BlockType;
-use metaflac::Tag;
 
 use crate::helpers::Track;
 use crate::metadata::Metadata;
 use crate::opts::Opts;
 
-fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &Path) {
+fn process_tracks(tracks: Vec<Track>, new_metadata: Metadata, output_dir: &Path) {
     let Metadata {
-        album: incoming_album_block,
-        tracks: incoming_track_blocks,
-    } = incoming_metadata;
+        album: new_album_block,
+        tracks: new_track_blocks,
+    } = new_metadata;
 
     // Ensure equal numbers of tracks and track blocks.
-    assert_eq!(tracks.len(), incoming_track_blocks.len());
+    assert_eq!(tracks.len(), new_track_blocks.len());
 
     let total_tracks = tracks.len();
     let num_digits = format!("{}", total_tracks).len();
@@ -32,29 +30,14 @@ fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &
 
         println!("Created temp dir: {}", temp_dir_path.display());
 
-        for (track, track_block) in tracks.into_iter().zip(incoming_track_blocks) {
+        for (track, new_track_block) in tracks.into_iter().zip(new_track_blocks) {
             println!("Processing input file: {}", track.path.display());
-            let mut flac_tag = Tag::read_from_path(&track.path).unwrap();
-
-            // Remove all tags and pictures.
-            flac_tag.remove_blocks(BlockType::VorbisComment);
-            flac_tag.remove_blocks(BlockType::Picture);
-
-            // Add in album block fields.
-            for (k, v) in &incoming_album_block {
-                flac_tag.set_vorbis(k.clone(), v.as_slice().to_vec());
-            }
-
-            // Add in track block fields.
-            for (k, v) in track_block {
-                flac_tag.set_vorbis(k, v.into_vec());
-            }
-
-            // Add track index/count fields.
-            flac_tag.set_vorbis(String::from("tracknumber"), vec![track.index.to_string()]);
-            flac_tag.set_vorbis(String::from("totaltracks"), vec![total_tracks.to_string()]);
-
-            flac_tag.save().unwrap();
+            let flac_tag = writer::write_meta_blocks_to_tag(
+                &track,
+                total_tracks,
+                &new_album_block,
+                new_track_block,
+            );
 
             // Create temporary interim file path.
             let tno = format!("{:01$}", track.index, num_digits);

@@ -2,7 +2,12 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-use crate::metadata::{MetaBlock, MetaBlockList};
+use metaflac::{BlockType, Tag};
+
+use crate::{
+    helpers::Track,
+    metadata::{MetaBlock, MetaBlockList},
+};
 
 /// Helper function to write the block data that was used for input to files.
 /// The files are written to a given output directory path.
@@ -22,4 +27,39 @@ pub(crate) fn write_block_files(
     let serialized = serde_json::to_string_pretty(track_blocks).unwrap();
     let mut file = File::create(track_blocks_path).unwrap();
     writeln!(&mut file, "{}", &serialized).unwrap();
+}
+
+pub(crate) fn write_meta_blocks_to_tag(
+    track: &Track,
+    total_num_tracks: usize,
+    new_album_block: &MetaBlock,
+    track_block: MetaBlock,
+) -> Tag {
+    println!("Writing new tags to file: {}", track.path.display());
+    let mut flac_tag = Tag::read_from_path(&track.path).unwrap();
+
+    // Remove all tags and pictures.
+    flac_tag.remove_blocks(BlockType::VorbisComment);
+    flac_tag.remove_blocks(BlockType::Picture);
+
+    // Add in album block fields.
+    for (k, v) in new_album_block {
+        flac_tag.set_vorbis(k.clone(), v.as_slice().to_vec());
+    }
+
+    // Add in track block fields.
+    for (k, v) in track_block {
+        flac_tag.set_vorbis(k, v.into_vec());
+    }
+
+    // Add track index/count fields.
+    flac_tag.set_vorbis(String::from("tracknumber"), vec![track.index.to_string()]);
+    flac_tag.set_vorbis(
+        String::from("totaltracks"),
+        vec![total_num_tracks.to_string()],
+    );
+
+    flac_tag.save().unwrap();
+
+    flac_tag
 }
