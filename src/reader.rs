@@ -73,18 +73,18 @@ impl<'a> IncomingMetadataSource<'a> {
     }
 }
 
-pub(crate) fn emit_source_tags(
+pub(crate) fn emit_preexisting_tags(
     tags: impl Iterator<Item = Tag>,
     emit_stdout: bool,
     emit_fp: Option<&Path>,
 ) {
-    let mut src_blocks = Vec::new();
+    let mut pe_blocks = Vec::new();
     let mut count = 0usize;
 
     for tag in tags {
         count += 1;
 
-        let mut block = MetaBlock::new();
+        let mut pe_block = MetaBlock::new();
 
         let keys = tag.vorbis_comments().unwrap().comments.keys();
 
@@ -100,20 +100,20 @@ pub(crate) fn emit_source_tags(
                         MetaVal::Many(vals)
                     };
 
-                    block.insert(key, meta_val);
+                    pe_block.insert(key, meta_val);
                 });
             }
         }
 
-        src_blocks.push(block);
+        pe_blocks.push(pe_block);
     }
 
-    // Serialize source blocks to a string.
-    let json_str = serde_json::to_string_pretty(&src_blocks).unwrap();
+    // Serialize preexisting blocks to a string.
+    let json_str = serde_json::to_string_pretty(&pe_blocks).unwrap();
 
     if emit_stdout {
         println!(
-            "Emitting existing tags for {} input file(s) below this line...",
+            "Emitting preexisting tags for {} input file(s) below this line...",
             count
         );
         println!("----------------------------------------------------------------");
@@ -122,7 +122,7 @@ pub(crate) fn emit_source_tags(
         println!("----------------------------------------------------------------");
     }
 
-    // Emit the source blocks to a file, if provided.
+    // Emit the preexisting blocks to a file, if provided.
     emit_fp.map(|fp| std::fs::write(fp, &json_str).unwrap());
 
     // Pause for user input.
@@ -179,13 +179,13 @@ pub(crate) fn collect_tracks(
     // Sort the tracks by track number.
     tracks.sort_by_key(|e| e.index);
 
-    // Sort and emit source tags, if needed.
+    // Sort and emit preexisting tags, if requested.
     tags_to_emit.as_mut().map(|tte| {
         tte.sort_by_key(|(tn, _)| *tn);
 
         let tags = tte.drain(..).map(|(_, tag)| tag);
 
-        emit_source_tags(
+        emit_preexisting_tags(
             tags,
             emit_existing,
             emit_existing_to.as_ref().map(|p| p.as_path()),
