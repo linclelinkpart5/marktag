@@ -11,15 +11,16 @@ use clap::Parser;
 use crate::helpers::Track;
 use crate::metadata::Metadata;
 use crate::opts::Opts;
+use crate::reader::IncomingMetadataSource;
 
-fn process_tracks(tracks: Vec<Track>, new_metadata: Metadata, output_dir: &Path) {
+fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &Path) {
     let Metadata {
-        album: new_album_block,
-        tracks: new_track_blocks,
-    } = new_metadata;
+        album: incoming_album_block,
+        tracks: incoming_track_blocks,
+    } = incoming_metadata;
 
     // Ensure equal numbers of tracks and track blocks.
-    assert_eq!(tracks.len(), new_track_blocks.len());
+    assert_eq!(tracks.len(), incoming_track_blocks.len());
 
     let total_tracks = tracks.len();
     let num_digits = format!("{}", total_tracks).len();
@@ -30,13 +31,13 @@ fn process_tracks(tracks: Vec<Track>, new_metadata: Metadata, output_dir: &Path)
 
         println!("Created temp dir: {}", temp_dir_path.display());
 
-        for (track, new_track_block) in tracks.into_iter().zip(new_track_blocks) {
+        for (track, incoming_track_block) in tracks.into_iter().zip(incoming_track_blocks) {
             println!("Processing input file: {}", track.path.display());
             let flac_tag = writer::write_meta_blocks_to_tag(
                 &track,
                 total_tracks,
-                &new_album_block,
-                new_track_block,
+                incoming_album_block.clone(),
+                incoming_track_block,
             );
 
             // Create temporary interim file path.
@@ -83,19 +84,18 @@ fn main() {
         .track_blocks_file
         .unwrap_or_else(|| source_dir.join("track.json"));
 
+    let incoming_meta_source =
+        IncomingMetadataSource::AlbumTrack(&album_block_file, &track_blocks_file);
+
     // If no output directory is given, use the source directory.
     let output_dir = opts.output_dir.unwrap_or(source_dir);
 
-    let album_block = reader::load_album_block(&album_block_file);
-    let track_blocks = reader::load_track_blocks(&track_blocks_file);
+    // Load the incoming metadata (the metadata the user has configured to be
+    // written to the tags).
+    let incoming_metadata = incoming_meta_source.load_metadata();
 
-    // Write out the input blocks to the output directory.
-    writer::write_block_files(&output_dir, &album_block, &track_blocks);
+    // Write out the incoming metadata to the output directory.
+    writer::write_output_metadata_file(&output_dir, &incoming_metadata);
 
-    let metadata = Metadata {
-        album: album_block,
-        tracks: track_blocks,
-    };
-
-    process_tracks(tracks, metadata, &output_dir);
+    process_tracks(tracks, incoming_metadata, &output_dir);
 }

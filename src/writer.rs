@@ -41,8 +41,8 @@ pub(crate) fn write_output_metadata_file(output_dir: &Path, metadata: &Metadata)
 pub(crate) fn write_meta_blocks_to_tag(
     track: &Track,
     total_num_tracks: usize,
-    new_album_block: &MetaBlock,
-    track_block: MetaBlock,
+    incoming_album_block: MetaBlock,
+    incoming_track_block: MetaBlock,
 ) -> Tag {
     println!("Writing new tags to file: {}", track.path.display());
     let mut flac_tag = Tag::read_from_path(&track.path).unwrap();
@@ -52,12 +52,12 @@ pub(crate) fn write_meta_blocks_to_tag(
     flac_tag.remove_blocks(BlockType::Picture);
 
     // Add in album block fields.
-    for (k, v) in new_album_block {
-        flac_tag.set_vorbis(k.clone(), v.as_slice().to_vec());
+    for (k, v) in incoming_album_block {
+        flac_tag.set_vorbis(k, v.into_vec());
     }
 
     // Add in track block fields.
-    for (k, v) in track_block {
+    for (k, v) in incoming_track_block {
         flac_tag.set_vorbis(k, v.into_vec());
     }
 

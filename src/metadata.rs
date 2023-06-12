@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents a metadata value. Metadata values can be either a bare string,
 /// or a list of strings.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
 #[serde(untagged)]
 pub enum MetaVal {
