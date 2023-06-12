@@ -102,10 +102,10 @@ pub(crate) fn collect_tracks(
 
     let mut expected_track_nums = (1..=flac_files.len()).collect::<HashSet<_>>();
     let mut tracks = Vec::with_capacity(flac_files.len());
-    let mut emitted_tag_blocks = None;
+    let mut tags_to_emit = None;
 
     if emit_existing || emit_existing_to.is_some() {
-        emitted_tag_blocks = Some(Vec::with_capacity(flac_files.len()));
+        tags_to_emit = Some(Vec::with_capacity(flac_files.len()));
     }
 
     for flac_file in flac_files {
@@ -115,8 +115,8 @@ pub(crate) fn collect_tracks(
         let track_num_str = helpers::expect_one(flac_tag.get_vorbis("tracknumber").unwrap());
         let track_num = track_num_str.parse::<usize>().unwrap();
 
-        emitted_tag_blocks.as_mut().map(|etbs| {
-            etbs.push((track_num, flac_tag));
+        tags_to_emit.as_mut().map(|tte| {
+            tte.push((track_num, flac_tag));
         });
 
         assert!(
@@ -138,11 +138,11 @@ pub(crate) fn collect_tracks(
     // Sort the tracks by track number.
     tracks.sort_by_key(|e| e.index);
 
-    // Sort and emit source blocks, if any.
-    emitted_tag_blocks.as_mut().map(|etbs| {
-        etbs.sort_by_key(|(tn, _)| *tn);
+    // Sort and emit source tags, if needed.
+    tags_to_emit.as_mut().map(|tte| {
+        tte.sort_by_key(|(tn, _)| *tn);
 
-        let tags = etbs.drain(..).map(|(_, tag)| tag);
+        let tags = tte.drain(..).map(|(_, tag)| tag);
 
         emit_source_tags(
             tags,
