@@ -32,6 +32,15 @@ fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &
         println!("Created temp dir: {}", temp_dir_path.display());
 
         for (track, incoming_track_block) in tracks.into_iter().zip(incoming_track_blocks) {
+            let display_artist = incoming_track_block
+                .get("artist")
+                .expect("track block did not have a 'artist' key")
+                .to_string();
+            let display_title = incoming_track_block
+                .get("title")
+                .expect("track block did not have a 'title' key")
+                .to_string();
+
             println!("Processing input file: {}", track.path.display());
             let flac_tag = writer::write_tags_to_track(
                 &track,
@@ -40,27 +49,18 @@ fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &
                 incoming_track_block,
             );
 
-            // Create temporary interim file path.
-            let tno = format!("{:01$}", track.index, num_digits);
-
-            let ars = flac_tag
-                .get_vorbis("artist")
-                .unwrap()
-                .collect::<Vec<_>>()
-                .join(", ");
-
-            let ttl = helpers::expect_one(flac_tag.get_vorbis("title").unwrap());
-
             let ext = track.path.extension().unwrap().to_string_lossy();
+            let output_track_file_name = helpers::generate_output_file_name(
+                track.index,
+                num_digits,
+                &display_artist,
+                &display_title,
+                &ext,
+            );
 
-            let mut interim_file_name = format!("{}. {} - {}.{}", tno, ars, ttl, ext);
+            let interim_path = temp_dir_path.join(&output_track_file_name);
 
-            // Fixing bug with fields that have path separators embedded in them.
-            interim_file_name.retain(|c| c != '/');
-
-            let interim_path = temp_dir_path.join(&interim_file_name);
-
-            println!("Moving file to temp dir: {}", interim_file_name);
+            println!("Moving file to temp dir: {}", output_track_file_name);
             std::fs::rename(&track.path, &interim_path).unwrap();
         }
 

@@ -44,3 +44,26 @@ pub(crate) fn calculate_gain(output_dir: &Path, temp_dir_path: &Path) {
 
     assert!(status.success());
 }
+
+/// Generates an output filename for a track once it is finished processing.
+pub(crate) fn generate_output_file_name(
+    track_num: usize,
+    track_padding: usize,
+    display_artist: &str,
+    display_title: &str,
+    ext: &str,
+) -> String {
+    let mut output_file_name = format!(
+        "{:0width$}. {} - {}.{}",
+        track_num,
+        display_artist,
+        display_title,
+        ext,
+        width = track_padding,
+    );
+
+    // Fixing bug with fields that have path separators embedded in them.
+    output_file_name.retain(|c| c != '/');
+
+    output_file_name
+}
