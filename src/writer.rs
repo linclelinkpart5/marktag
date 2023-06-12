@@ -6,7 +6,11 @@ use crate::metadata::{MetaBlock, MetaBlockList};
 
 /// Helper function to write the block data that was used for input to files.
 /// The files are written to a given output directory path.
-fn write_block_files(output_dir: &Path, album_block: &MetaBlock, track_blocks: &MetaBlockList) {
+pub(crate) fn write_block_files(
+    output_dir: &Path,
+    album_block: &MetaBlock,
+    track_blocks: &MetaBlockList,
+) {
     // Write out the album block, appending a newline at the end.
     let album_block_path = output_dir.join("album.json");
     let serialized = serde_json::to_string_pretty(album_block).unwrap();
