@@ -33,29 +33,24 @@ const SKIPPED_TAGS: &[&str] = &[
 ];
 
 pub(crate) enum IncomingMetadataSource<'a> {
-    Unified(Option<&'a Path>),
-    AlbumTrack(Option<&'a Path>, Option<&'a Path>),
+    Unified(&'a Path),
+    AlbumTrack(&'a Path, &'a Path),
 }
 
 impl<'a> IncomingMetadataSource<'a> {
     pub fn load_metadata(&self) -> Metadata {
         match self {
-            Self::Unified(p) => {
-                let path = p.unwrap_or(Path::new("meta.json"));
-
+            Self::Unified(path) => {
                 println!("Loading incoming metadata (unified): {}", path.display());
 
                 let contents = std::fs::read_to_string(path).unwrap();
                 serde_json::from_str(&contents).unwrap()
             }
-            Self::AlbumTrack(ap, tp) => {
-                let album_path = ap.unwrap_or(Path::new("album.json"));
-                let track_path = tp.unwrap_or(Path::new("track.json"));
-
+            Self::AlbumTrack(album_path, track_path) => {
                 println!(
                     "Loading incoming metadata (album, track): ({}, {})",
                     album_path.display(),
-                    track_path.display()
+                    track_path.display(),
                 );
 
                 let contents = std::fs::read_to_string(album_path).unwrap();
