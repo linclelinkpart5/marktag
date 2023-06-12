@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,28 @@ impl MetaVal {
         match self {
             Self::One(v) => vec![v],
             Self::Many(vs) => vs,
+        }
+    }
+}
+
+impl Display for MetaVal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::One(v) => write!(f, "{}", v),
+            Self::Many(vs) => {
+                // TODO: Use `iter_intersperse` instead once it is stabilized.
+                let mut is_first = true;
+                for v in vs {
+                    if is_first {
+                        is_first = false;
+                    } else {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", v)?;
+                }
+
+                Ok(())
+            }
         }
     }
 }
@@ -162,5 +185,14 @@ mod tests {
         let deserialized: Metadata = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(deserialized, metadata);
+    }
+
+    #[test]
+    fn test_display() {
+        let meta_val = MetaVal::One(S("VALUE"));
+        assert_eq!(meta_val.to_string(), "VALUE");
+
+        let meta_val = MetaVal::Many(vec![S("VALUE_A"), S("VALUE_B"), S("VALUE_C")]);
+        assert_eq!(meta_val.to_string(), "VALUE_A, VALUE_B, VALUE_C");
     }
 }
