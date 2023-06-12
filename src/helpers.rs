@@ -2,9 +2,9 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub(crate) struct Entry {
+pub(crate) struct Track {
+    pub index: usize,
     pub path: PathBuf,
-    pub track_num: usize,
 }
 
 /// Pauses the program, and outputs a prompt for the user to

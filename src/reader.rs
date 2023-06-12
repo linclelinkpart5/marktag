@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use metaflac::Tag;
 
-use crate::helpers::{self, Entry};
+use crate::helpers::{self, Track};
 use crate::metadata::{MetaBlock, MetaBlockList, MetaVal};
 
 const SKIPPED_TAGS: &[&str] = &[
@@ -88,11 +88,11 @@ pub(crate) fn emit_source_tags(
     helpers::pause();
 }
 
-pub(crate) fn collect_entries(
+pub(crate) fn collect_tracks(
     source_dir: &Path,
     emit_existing: bool,
     emit_existing_to: Option<PathBuf>,
-) -> Vec<Entry> {
+) -> Vec<Track> {
     let flac_files = source_dir
         .read_dir()
         .unwrap()
@@ -101,7 +101,7 @@ pub(crate) fn collect_entries(
         .collect::<Vec<_>>();
 
     let mut expected_track_nums = (1..=flac_files.len()).collect::<HashSet<_>>();
-    let mut entries = Vec::with_capacity(flac_files.len());
+    let mut tracks = Vec::with_capacity(flac_files.len());
     let mut emitted_tag_blocks = None;
 
     if emit_existing || emit_existing_to.is_some() {
@@ -124,19 +124,19 @@ pub(crate) fn collect_entries(
             "unexpected track number"
         );
 
-        let entry = Entry {
+        let track = Track {
+            index: track_num,
             path: flac_file,
-            track_num,
         };
 
-        entries.push(entry);
+        tracks.push(track);
     }
 
     // Ensure that all expected track numbers were covered.
     assert!(expected_track_nums.is_empty());
 
-    // Sort the entries by track number.
-    entries.sort_by_key(|e| e.track_num);
+    // Sort the tracks by track number.
+    tracks.sort_by_key(|e| e.index);
 
     // Sort and emit source blocks, if any.
     emitted_tag_blocks.as_mut().map(|etbs| {
@@ -151,7 +151,7 @@ pub(crate) fn collect_entries(
         );
     });
 
-    entries
+    tracks
 }
 
 pub(crate) fn load_album_block(path: &Path) -> MetaBlock {
