@@ -6,7 +6,7 @@ use metaflac::{BlockType, Tag};
 
 use crate::{
     helpers::Track,
-    metadata::{MetaBlock, MetaBlockList},
+    metadata::{MetaBlock, MetaBlockList, Metadata},
 };
 
 /// Helper function to write the block data that was used for input to files.
@@ -26,6 +26,15 @@ pub(crate) fn write_block_files(
     let track_blocks_path = output_dir.join("track.json");
     let serialized = serde_json::to_string_pretty(track_blocks).unwrap();
     let mut file = File::create(track_blocks_path).unwrap();
+    writeln!(&mut file, "{}", &serialized).unwrap();
+}
+
+/// Helper method to write the combined metadata file into the final output
+/// directory, alongside the newly-tagged tracks.
+pub(crate) fn write_output_metadata_file(output_dir: &Path, metadata: &Metadata) {
+    let metadata_fp = output_dir.join("meta.json");
+    let serialized = serde_json::to_string_pretty(metadata).unwrap();
+    let mut file = File::create(metadata_fp).unwrap();
     writeln!(&mut file, "{}", &serialized).unwrap();
 }
 
