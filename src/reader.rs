@@ -50,19 +50,17 @@ pub(crate) fn emit_source_tags(
         for key in keys {
             let key = key.to_ascii_lowercase();
             if !SKIPPED_TAGS.contains(&key.as_str()) {
-                let lookup = tag
-                    .get_vorbis(&key)
-                    .map(|v| v.map(String::from).collect::<Vec<_>>());
+                tag.get_vorbis(&key).map(|v| {
+                    let mut vals = v.map(String::from).collect::<Vec<_>>();
 
-                if let Some(mut vals) = lookup {
-                    let block_val = if vals.len() == 1 {
+                    let meta_val = if vals.len() == 1 {
                         MetaVal::One(vals.swap_remove(0))
                     } else {
                         MetaVal::Many(vals)
                     };
 
-                    block.insert(key, block_val);
-                }
+                    block.insert(key, meta_val);
+                });
             }
         }
 
