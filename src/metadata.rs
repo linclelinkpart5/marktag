@@ -14,13 +14,6 @@ pub enum MetaVal {
 }
 
 impl MetaVal {
-    pub fn as_slice(&self) -> &[String] {
-        match self {
-            Self::One(v) => core::slice::from_ref(v),
-            Self::Many(vs) => vs.as_slice(),
-        }
-    }
-
     pub fn into_vec(self) -> Vec<String> {
         match self {
             Self::One(v) => vec![v],
