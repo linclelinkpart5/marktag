@@ -11,17 +11,17 @@ use metaflac::block::BlockType;
 use metaflac::Tag;
 
 use crate::helpers::Track;
-use crate::metadata::{MetaBlock, MetaBlockList};
+use crate::metadata::Metadata;
 use crate::opts::Opts;
 
-fn process_tracks(
-    tracks: Vec<Track>,
-    album_block: MetaBlock,
-    track_blocks: MetaBlockList,
-    output_dir: &Path,
-) {
+fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &Path) {
+    let Metadata {
+        album: incoming_album_block,
+        tracks: incoming_track_blocks,
+    } = incoming_metadata;
+
     // Ensure equal numbers of tracks and track blocks.
-    assert_eq!(tracks.len(), track_blocks.len());
+    assert_eq!(tracks.len(), incoming_track_blocks.len());
 
     let total_tracks = tracks.len();
     let num_digits = format!("{}", total_tracks).len();
@@ -32,7 +32,7 @@ fn process_tracks(
 
         println!("Created temp dir: {}", temp_dir_path.display());
 
-        for (track, track_block) in tracks.into_iter().zip(track_blocks) {
+        for (track, track_block) in tracks.into_iter().zip(incoming_track_blocks) {
             println!("Processing input file: {}", track.path.display());
             let mut flac_tag = Tag::read_from_path(&track.path).unwrap();
 
@@ -41,7 +41,7 @@ fn process_tracks(
             flac_tag.remove_blocks(BlockType::Picture);
 
             // Add in album block fields.
-            for (k, v) in &album_block {
+            for (k, v) in &incoming_album_block {
                 flac_tag.set_vorbis(k.clone(), v.as_slice().to_vec());
             }
 
@@ -109,5 +109,10 @@ fn main() {
     // Write out the input blocks to the output directory.
     writer::write_block_files(&output_dir, &album_block, &track_blocks);
 
-    process_tracks(tracks, album_block, track_blocks, &output_dir);
+    let metadata = Metadata {
+        album: album_block,
+        tracks: track_blocks,
+    };
+
+    process_tracks(tracks, metadata, &output_dir);
 }

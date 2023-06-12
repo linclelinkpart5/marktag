@@ -58,9 +58,9 @@ pub type MetaBlockList = Vec<MetaBlock>;
 /// about the album itself, as well as its contained tracks.
 #[derive(Debug, Deserialize, Serialize)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Metadata {
-    album: MetaBlock,
-    tracks: MetaBlockList,
+pub(crate) struct Metadata {
+    pub album: MetaBlock,
+    pub tracks: MetaBlockList,
 }
 
 #[cfg(test)]
