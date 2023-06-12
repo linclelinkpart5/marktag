@@ -65,6 +65,8 @@ pub struct Metadata {
 
 #[cfg(test)]
 mod tests {
+    #![allow(non_snake_case)]
+
     use super::MetaVal::{Many, One};
     use super::*;
 
@@ -73,7 +75,7 @@ mod tests {
     use serde_json;
 
     #[test]
-    fn test_deserialize() {
+    fn test_metadata__deserialize() {
         let serialized: &'static str = r#"
             {
                 "album": {
@@ -148,7 +150,7 @@ mod tests {
     }
 
     #[test]
-    fn test_round_trip() {
+    fn test_metadata__round_trip() {
         let metadata = Metadata {
             album: btreemap! {
                 S("album") => One(S("Villano")),
@@ -188,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn test_display() {
+    fn test_meta_val__display() {
         let meta_val = MetaVal::One(S("VALUE"));
         assert_eq!(meta_val.to_string(), "VALUE");
 
