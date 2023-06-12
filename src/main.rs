@@ -42,7 +42,7 @@ fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &
                 .to_string();
 
             println!("Processing input file: {}", track.path.display());
-            let flac_tag = writer::write_tags_to_track(
+            writer::write_tags_to_track(
                 &track,
                 total_tracks,
                 incoming_album_block.clone(),

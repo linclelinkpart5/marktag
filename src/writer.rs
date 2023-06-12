@@ -43,7 +43,7 @@ pub(crate) fn write_tags_to_track(
     total_num_tracks: usize,
     incoming_album_block: MetaBlock,
     incoming_track_block: MetaBlock,
-) -> Tag {
+) {
     println!("Writing new tags to file: {}", track.path.display());
     let mut flac_tag = Tag::read_from_path(&track.path).unwrap();
 
@@ -69,6 +69,4 @@ pub(crate) fn write_tags_to_track(
     );
 
     flac_tag.save().unwrap();
-
-    flac_tag
 }
