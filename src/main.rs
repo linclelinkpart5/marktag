@@ -33,7 +33,7 @@ fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &
 
         for (track, incoming_track_block) in tracks.into_iter().zip(incoming_track_blocks) {
             println!("Processing input file: {}", track.path.display());
-            let flac_tag = writer::write_meta_blocks_to_tag(
+            let flac_tag = writer::write_tags_to_track(
                 &track,
                 total_tracks,
                 incoming_album_block.clone(),

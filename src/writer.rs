@@ -38,7 +38,7 @@ pub(crate) fn write_output_metadata_file(output_dir: &Path, metadata: &Metadata)
     writeln!(&mut file, "{}", &serialized).unwrap();
 }
 
-pub(crate) fn write_meta_blocks_to_tag(
+pub(crate) fn write_tags_to_track(
     track: &Track,
     total_num_tracks: usize,
     incoming_album_block: MetaBlock,
