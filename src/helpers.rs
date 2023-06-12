@@ -1,5 +1,6 @@
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 pub(crate) struct Entry {
     pub path: PathBuf,
@@ -27,4 +28,19 @@ pub(crate) fn expect_one<T, I: IntoIterator<Item = T>>(it: I) -> T {
         (Some(e), None) => e,
         _ => panic!("did not find exactly one value"),
     }
+}
+
+pub(crate) fn calculate_gain(output_dir: &Path, temp_dir_path: &Path) {
+    // Run `bs1770gain` as an external command.
+    // This will/should also copy the tracks to their final destination directory.
+    let status = Command::new("bs1770gain")
+        .arg("--replaygain")
+        .arg("-irt")
+        .arg("--output")
+        .arg(output_dir.as_os_str())
+        .arg(temp_dir_path.as_os_str())
+        .status()
+        .unwrap();
+
+    assert!(status.success());
 }
