@@ -12,6 +12,22 @@ pub enum MetaVal {
     Many(Vec<String>),
 }
 
+impl MetaVal {
+    pub fn as_slice(&self) -> &[String] {
+        match self {
+            Self::One(v) => core::slice::from_ref(v),
+            Self::Many(vs) => vs.as_slice(),
+        }
+    }
+
+    pub fn into_vec(self) -> Vec<String> {
+        match self {
+            Self::One(v) => vec![v],
+            Self::Many(vs) => vs,
+        }
+    }
+}
+
 pub type MetaBlock = BTreeMap<String, MetaVal>;
 pub type MetaBlockList = Vec<MetaBlock>;
 
