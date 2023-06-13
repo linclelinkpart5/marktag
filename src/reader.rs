@@ -189,15 +189,3 @@ pub(crate) fn collect_tracks(
 
     tracks
 }
-
-pub(crate) fn load_album_block(path: &Path) -> MetaBlock {
-    println!("Loading album file: {}", path.display());
-    let contents = std::fs::read_to_string(path).unwrap();
-    serde_json::from_str(&contents).unwrap()
-}
-
-pub(crate) fn load_track_blocks(path: &Path) -> MetaBlockList {
-    println!("Loading track file: {}", path.display());
-    let contents = std::fs::read_to_string(path).unwrap();
-    serde_json::from_str(&contents).unwrap()
-}
