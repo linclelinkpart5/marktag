@@ -32,39 +32,29 @@ const SKIPPED_TAGS: &[&str] = &[
     "year",
 ];
 
-pub(crate) enum IncomingMetadataSource<'a> {
-    Unified(&'a Path),
-    AlbumTrack(&'a Path, &'a Path),
+pub(crate) fn load_metadata(path: &Path) -> Metadata {
+    println!("Loading incoming metadata file: {}", path.display());
+
+    let contents = std::fs::read_to_string(path).unwrap();
+    serde_json::from_str(&contents).unwrap()
 }
 
-impl<'a> IncomingMetadataSource<'a> {
-    pub fn load_metadata(&self) -> Metadata {
-        match self {
-            Self::Unified(path) => {
-                println!("Loading incoming metadata (unified): {}", path.display());
+pub(crate) fn load_split_metadata(album_path: &Path, track_path: &Path) -> Metadata {
+    println!(
+        "Loading incoming metadata files (album, track): ({}, {})",
+        album_path.display(),
+        track_path.display(),
+    );
 
-                let contents = std::fs::read_to_string(path).unwrap();
-                serde_json::from_str(&contents).unwrap()
-            }
-            Self::AlbumTrack(album_path, track_path) => {
-                println!(
-                    "Loading incoming metadata (album, track): ({}, {})",
-                    album_path.display(),
-                    track_path.display(),
-                );
+    let contents = std::fs::read_to_string(album_path).unwrap();
+    let album_block: MetaBlock = serde_json::from_str(&contents).unwrap();
 
-                let contents = std::fs::read_to_string(album_path).unwrap();
-                let album_block: MetaBlock = serde_json::from_str(&contents).unwrap();
+    let contents = std::fs::read_to_string(track_path).unwrap();
+    let track_blocks: MetaBlockList = serde_json::from_str(&contents).unwrap();
 
-                let contents = std::fs::read_to_string(track_path).unwrap();
-                let track_blocks: MetaBlockList = serde_json::from_str(&contents).unwrap();
-
-                Metadata {
-                    album: album_block,
-                    tracks: track_blocks,
-                }
-            }
-        }
+    Metadata {
+        album: album_block,
+        tracks: track_blocks,
     }
 }
 

@@ -11,7 +11,6 @@ use clap::Parser;
 use crate::helpers::Track;
 use crate::metadata::Metadata;
 use crate::opts::Opts;
-use crate::reader::IncomingMetadataSource;
 
 fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &Path) {
     let Metadata {
@@ -84,15 +83,12 @@ fn main() {
         .track_blocks_file
         .unwrap_or_else(|| source_dir.join("track.json"));
 
-    let incoming_meta_source =
-        IncomingMetadataSource::AlbumTrack(&album_block_file, &track_blocks_file);
-
     // If no output directory is given, use the source directory.
     let output_dir = opts.output_dir.unwrap_or(source_dir);
 
     // Load the incoming metadata (the metadata the user has configured to be
     // written to the tags).
-    let incoming_metadata = incoming_meta_source.load_metadata();
+    let incoming_metadata = reader::load_split_metadata(&album_block_file, &track_blocks_file);
 
     // Write out the incoming metadata to the output directory.
     writer::write_output_metadata_file(&output_dir, &incoming_metadata);
