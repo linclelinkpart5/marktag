@@ -68,7 +68,7 @@ impl<'a> IncomingMetadataSource<'a> {
     }
 }
 
-pub(crate) fn emit_preexisting_tags(
+pub(crate) fn emit_existing_tags(
     tags: impl Iterator<Item = Tag>,
     emit_stdout: bool,
     emit_fp: Option<&Path>,
@@ -103,12 +103,12 @@ pub(crate) fn emit_preexisting_tags(
         pe_blocks.push(pe_block);
     }
 
-    // Serialize preexisting blocks to a string.
+    // Serialize existing blocks to a string.
     let json_str = serde_json::to_string_pretty(&pe_blocks).unwrap();
 
     if emit_stdout {
         println!(
-            "Emitting preexisting tags for {} input file(s) below this line...",
+            "Emitting existing tags for {} input file(s) below this line...",
             count
         );
         println!("----------------------------------------------------------------");
@@ -117,7 +117,7 @@ pub(crate) fn emit_preexisting_tags(
         println!("----------------------------------------------------------------");
     }
 
-    // Emit the preexisting blocks to a file, if provided.
+    // Emit the existing blocks to a file, if provided.
     emit_fp.map(|fp| std::fs::write(fp, &json_str).unwrap());
 
     // Pause for user input.
@@ -174,13 +174,13 @@ pub(crate) fn collect_tracks(
     // Sort the tracks by track number.
     tracks.sort_by_key(|e| e.index);
 
-    // Sort and emit preexisting tags, if requested.
+    // Sort and emit existing tags, if requested.
     tags_to_emit.as_mut().map(|tte| {
         tte.sort_by_key(|(tn, _)| *tn);
 
         let tags = tte.drain(..).map(|(_, tag)| tag);
 
-        emit_preexisting_tags(
+        emit_existing_tags(
             tags,
             emit_existing,
             emit_existing_to.as_ref().map(|p| p.as_path()),
