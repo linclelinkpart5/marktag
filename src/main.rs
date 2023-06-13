@@ -1,4 +1,5 @@
 mod helpers;
+mod loudness;
 mod metadata;
 mod opts;
 mod reader;
