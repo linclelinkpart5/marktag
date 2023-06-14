@@ -72,8 +72,11 @@ fn process_tracks(tracks: Vec<Track>, incoming_metadata: Metadata, output_dir: &
 fn main() {
     let opts = Opts::parse();
 
-    let tracks =
-        reader::collect_tracks(&opts.source_dir, opts.emit_existing, opts.emit_existing_to);
+    let tracks = reader::collect_tracks(
+        &opts.source_dir,
+        opts.emit_existing,
+        opts.emit_existing_to.as_ref().map(|p| p.as_path()),
+    );
 
     let source_dir = opts.source_dir;
 

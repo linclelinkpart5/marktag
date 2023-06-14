@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use metaflac::Tag;
 
@@ -117,7 +117,7 @@ pub(crate) fn emit_existing_tags<'a>(
 pub(crate) fn collect_tracks(
     source_dir: &Path,
     emit_existing: bool,
-    emit_existing_to: Option<PathBuf>,
+    emit_existing_to: Option<&Path>,
 ) -> Vec<Track> {
     let track_paths = source_dir
         .read_dir()
@@ -159,11 +159,11 @@ pub(crate) fn collect_tracks(
 
     // Emit existing tags, if requested.
     if emit_existing || emit_existing_to.is_some() {
-        // emit_existing_tags(
-        //     tracks.iter().map(|t| &t.tag),
-        //     emit_existing,
-        //     emit_existing_to,
-        // );
+        emit_existing_tags(
+            tracks.iter().map(|t| &t.tag),
+            emit_existing,
+            emit_existing_to,
+        );
     }
 
     tracks
