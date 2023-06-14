@@ -145,7 +145,7 @@ pub(crate) fn collect_tracks(
         let track = Track {
             index: track_num,
             path: track_path,
-            // tag: track_tag,
+            tag: track_tag,
         };
 
         tracks.push(track);

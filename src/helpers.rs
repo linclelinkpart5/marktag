@@ -2,9 +2,12 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use metaflac::Tag;
+
 pub(crate) struct Track {
     pub index: usize,
     pub path: PathBuf,
+    pub tag: Tag,
 }
 
 /// Pauses the program, and outputs a prompt for the user to
