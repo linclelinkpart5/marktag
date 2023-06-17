@@ -4,6 +4,7 @@ use std::path::Path;
 use bs1770::{Power, Windows100ms};
 use claxon::FlacReader;
 
+use crate::helpers::Track;
 pub(crate) struct Loudness(Power);
 
 impl Loudness {
@@ -78,5 +79,38 @@ impl LoudnessAnalyzer {
         let gated_power = bs1770::gated_mean(self.windows.as_ref()).unwrap_or(Power(0.0));
 
         Loudness(gated_power)
+    }
+}
+
+pub(crate) struct ScannedTrack {
+    track: Track,
+    loudness: Loudness,
+}
+
+pub(crate) struct AnalysisOutput {
+    scanned_tracks: Vec<ScannedTrack>,
+    album_loudness: Loudness,
+}
+
+pub(crate) fn analyze_tracks(tracks: Vec<Track>) -> AnalysisOutput {
+    // Scan tracks for loudness.
+    let mut loudness_analyzer = LoudnessAnalyzer::new();
+    let scanned_tracks = tracks
+        .into_iter()
+        .map(|track| {
+            let track_loudness = loudness_analyzer.calculate_track_loudness(&track.path);
+
+            ScannedTrack {
+                track,
+                loudness: track_loudness,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let album_loudness = loudness_analyzer.calculate_album_loudness();
+
+    AnalysisOutput {
+        scanned_tracks,
+        album_loudness,
     }
 }
